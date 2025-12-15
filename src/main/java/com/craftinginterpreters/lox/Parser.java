@@ -53,7 +53,9 @@ class Parser {
         if (match(PRINT)) {
             return printStatement();
         }
-
+        if (match(LEFT_BRACE)) {
+            return new Stmt.Block(block()); // <--- NOVO
+        }
         return expressionStatement();
     }
 
@@ -70,7 +72,7 @@ class Parser {
     }
 
     private Expr expression() {
-        return equality();
+        return assignment();
     }
 
     private Expr equality() {
@@ -234,5 +236,37 @@ class Parser {
 
             advance();
         }
+    }
+
+    private Expr assignment() {
+        // Primeiro, lemos o lado esquerdo (pode ser uma variável ou outra expressão)
+        Expr expr = equality();
+
+        if (match(EQUAL)) {
+            Token equals = previous();
+            // Lemos o valor do lado direito recursivamente (permite a = b = 1)
+            Expr value = assignment();
+
+            // Verificamos se o lado esquerdo era mesmo uma variável válida
+            if (expr instanceof Expr.Variable) {
+                Token name = ((Expr.Variable) expr).name;
+                return new Expr.Assign(name, value);
+            }
+
+            error(equals, "Invalid assignment target.");
+        }
+
+        return expr;
+    }
+
+    private List<Stmt> block() {
+        List<Stmt> statements = new ArrayList<>();
+
+        while (!check(RIGHT_BRACE) && !isAtEnd()) {
+            statements.add(declaration());
+        }
+
+        consume(RIGHT_BRACE, "Expect '}' after block.");
+        return statements;
     }
 }
