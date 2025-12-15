@@ -74,6 +74,7 @@ class Scanner {
                 break;
             case '/':
                 if (match('/')) {
+                    // Um comentário vai até ao final da linha.
                     while (peek() != '\n' && !isAtEnd()) {
                         advance();
                     }
@@ -81,12 +82,18 @@ class Scanner {
                     addToken(SLASH);
                 }
                 break;
+
             case ' ':
             case '\r':
             case '\t':
+                // Ignorar espaços em branco.
                 break;
+
             case '\n':
                 line++;
+                break;
+            case '"':
+                string();
                 break;
             default:
                 Lox.error(line, "Unexpected character.");
@@ -128,5 +135,26 @@ class Scanner {
             return '\0';
         }
         return source.charAt(current);
+    }
+
+    private void string() {
+        while (peek() != '"' && !isAtEnd()) {
+            if (peek() == '\n') {
+                line++;
+            }
+            advance();
+        }
+
+        if (isAtEnd()) {
+            Lox.error(line, "Unterminated string.");
+            return;
+        }
+
+        // A aspa de fecho.
+        advance();
+
+        // Remove as aspas do valor literal.
+        String value = source.substring(start + 1, current - 1);
+        addToken(STRING, value);
     }
 }
