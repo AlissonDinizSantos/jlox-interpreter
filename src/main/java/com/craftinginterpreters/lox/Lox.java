@@ -10,7 +10,9 @@ import java.util.List;
 
 public class Lox {
 
+    private static final Interpreter interpreter = new Interpreter();
     static boolean hadError = false;
+    static boolean hadRuntimeError = false;
 
     public static void main(String[] args) throws IOException {
         if (args.length > 1) {
@@ -28,6 +30,10 @@ public class Lox {
         run(new String(bytes, Charset.defaultCharset()));
         if (hadError) {
             System.exit(65);
+        }
+        if (hadRuntimeError) {
+            System.exit(70);
+
         }
     }
 
@@ -50,19 +56,42 @@ public class Lox {
         Scanner scanner = new Scanner(source);
         List<Token> tokens = scanner.scanTokens();
 
-        // Agora imprimimos os tokens gerados
-        for (Token token : tokens) {
-            System.out.println(token);
+        Parser parser = new Parser(tokens);
+        Expr expression = parser.parse();
+
+        // Se houve erro de sintaxe, paramos.
+        if (hadError) {
+            return;
         }
+
+        // Executa a expressão!
+        interpreter.interpret(expression);
     }
 
+    // --- MÉTODOS DE ERRO ---
+    // 1. Usado pelo Scanner (lexical)
     static void error(int line, String message) {
         report(line, "", message);
+    }
+
+    // 2. Usado pelo Parser (sintático)
+    static void error(Token token, String message) {
+        if (token.type == TokenType.EOF) {
+            report(token.line, " at end", message);
+        } else {
+            report(token.line, " at '" + token.lexeme + "'", message);
+        }
     }
 
     private static void report(int line, String where, String message) {
         System.err.println(
                 "[line " + line + "] Error" + where + ": " + message);
         hadError = true;
+    }
+
+    static void runtimeError(RuntimeError error) {
+        System.err.println(error.getMessage()
+                + "\n[line " + error.token.line + "]");
+        hadRuntimeError = true;
     }
 }
