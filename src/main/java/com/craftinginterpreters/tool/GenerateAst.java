@@ -14,10 +14,11 @@ public class GenerateAst {
         }
         String outputDir = args[0];
 
-        // Nossas expressões
+        // DEFINIÇÃO DAS EXPRESSÕES
         defineAst(outputDir, "Expr", Arrays.asList(
                 "Assign   : Token name, Expr value",
                 "Binary   : Expr left, Token operator, Expr right",
+                "Call     : Expr callee, Token paren, List<Expr> arguments", // <--- IMPORTANTE
                 "Grouping : Expr expression",
                 "Literal  : Object value",
                 "Logical  : Expr left, Token operator, Expr right",
@@ -25,12 +26,14 @@ public class GenerateAst {
                 "Variable : Token name"
         ));
 
-        // Nossas declarações
+        // DEFINIÇÃO DOS STATEMENTS
         defineAst(outputDir, "Stmt", Arrays.asList(
                 "Block      : List<Stmt> statements",
                 "Expression : Expr expression",
+                "Function   : Token name, List<Token> params, List<Stmt> body", // <--- IMPORTANTE
                 "If         : Expr condition, Stmt thenBranch, Stmt elseBranch",
                 "Print      : Expr expression",
+                "Return     : Token keyword, Expr value", // <--- IMPORTANTE
                 "Var        : Token name, Expr initializer"
         ));
     }
@@ -49,14 +52,12 @@ public class GenerateAst {
 
         defineVisitor(writer, baseName, types);
 
-        // As classes AST.
         for (String type : types) {
             String className = type.split(":")[0].trim();
             String fields = type.split(":")[1].trim();
             defineType(writer, baseName, className, fields);
         }
 
-        // O método accept() base.
         writer.println();
         writer.println("  abstract <R> R accept(Visitor<R> visitor);");
 
@@ -82,10 +83,8 @@ public class GenerateAst {
             String className, String fieldList) {
         writer.println("  static class " + className + " extends " + baseName + " {");
 
-        // Construtor.
         writer.println("    " + className + "(" + fieldList + ") {");
 
-        // Armazena parâmetros nos campos.
         String[] fields = fieldList.split(", ");
         for (String field : fields) {
             String name = field.split(" ")[1];
@@ -94,14 +93,12 @@ public class GenerateAst {
 
         writer.println("    }");
 
-        // Pattern Visitor.
         writer.println();
         writer.println("    @Override");
         writer.println("    <R> R accept(Visitor<R> visitor) {");
         writer.println("      return visitor.visit" + className + baseName + "(this);");
         writer.println("    }");
 
-        // Campos.
         writer.println();
         for (String field : fields) {
             writer.println("    final " + field + ";");
