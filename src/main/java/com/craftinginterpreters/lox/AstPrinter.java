@@ -29,19 +29,6 @@ class AstPrinter implements Expr.Visitor<String> {
         return parenthesize(expr.operator.lexeme, expr.right);
     }
 
-    private String parenthesize(String name, Expr... exprs) {
-        StringBuilder builder = new StringBuilder();
-
-        builder.append("(").append(name);
-        for (Expr expr : exprs) {
-            builder.append(" ");
-            builder.append(expr.accept(this));
-        }
-        builder.append(")");
-
-        return builder.toString();
-    }
-
     @Override
     public String visitVariableExpr(Expr.Variable expr) {
         return expr.name.lexeme;
@@ -60,5 +47,39 @@ class AstPrinter implements Expr.Visitor<String> {
     @Override
     public String visitCallExpr(Expr.Call expr) {
         return parenthesize("call", expr.callee);
+    }
+
+    // --- NOVOS MÉTODOS PARA CLASSES (Podem ser simplificados) ---
+    @Override
+    public String visitGetExpr(Expr.Get expr) {
+        return parenthesize("." + expr.name.lexeme, expr.object);
+    }
+
+    @Override
+    public String visitSetExpr(Expr.Set expr) {
+        return parenthesize("set " + expr.name.lexeme, expr.object, expr.value);
+    }
+
+    @Override
+    public String visitSuperExpr(Expr.Super expr) {
+        return "super." + expr.method.lexeme;
+    }
+
+    @Override
+    public String visitThisExpr(Expr.This expr) {
+        return "this";
+    }
+
+    private String parenthesize(String name, Expr... exprs) {
+        StringBuilder builder = new StringBuilder();
+
+        builder.append("(").append(name);
+        for (Expr expr : exprs) {
+            builder.append(" ");
+            builder.append(expr.accept(this));
+        }
+        builder.append(")");
+
+        return builder.toString();
     }
 }

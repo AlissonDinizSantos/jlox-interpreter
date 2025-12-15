@@ -5,15 +5,13 @@ import java.util.Map;
 
 class Environment {
 
-    final Environment enclosing; // O escopo "pai"
+    final Environment enclosing;
     private final Map<String, Object> values = new HashMap<>();
 
-    // Construtor para o escopo global (sem pai)
     Environment() {
         enclosing = null;
     }
 
-    // Construtor para escopos locais (com pai)
     Environment(Environment enclosing) {
         this.enclosing = enclosing;
     }
@@ -23,7 +21,6 @@ class Environment {
             return values.get(name.lexeme);
         }
 
-        // Se não achou aqui, tenta no pai (se existir)
         if (enclosing != null) {
             return enclosing.get(name);
         }
@@ -37,7 +34,6 @@ class Environment {
             return;
         }
 
-        // Se não achou aqui, tenta atualizar no pai
         if (enclosing != null) {
             enclosing.assign(name, value);
             return;
@@ -48,5 +44,22 @@ class Environment {
 
     void define(String name, Object value) {
         values.put(name, value);
+    }
+
+    // --- MÉTODOS QUE ESTAVAM FALTANDO ---
+    Environment ancestor(int distance) {
+        Environment environment = this;
+        for (int i = 0; i < distance; i++) {
+            environment = environment.enclosing;
+        }
+        return environment;
+    }
+
+    Object getAt(int distance, String name) {
+        return ancestor(distance).values.get(name);
+    }
+
+    void assignAt(int distance, Token name, Object value) {
+        ancestor(distance).values.put(name.lexeme, value);
     }
 }

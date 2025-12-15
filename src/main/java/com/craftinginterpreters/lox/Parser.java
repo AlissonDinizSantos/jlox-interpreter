@@ -27,10 +27,14 @@ class Parser {
 
     private Stmt declaration() {
         try {
+            if (match(CLASS)) {
+                return classDeclaration();
+            }
             if (match(FUN)) {
                 return function("function"); // <--- NOVO
 
-                        }if (match(VAR)) {
+            }
+            if (match(VAR)) {
                 return varDeclaration();
             }
             return statement();
@@ -38,6 +42,27 @@ class Parser {
             synchronize();
             return null;
         }
+    }
+
+    private Stmt classDeclaration() {
+        Token name = consume(IDENTIFIER, "Expect class name.");
+
+        Expr.Variable superclass = null;
+        if (match(LESS)) {
+            consume(IDENTIFIER, "Expect superclass name.");
+            superclass = new Expr.Variable(previous());
+        }
+
+        consume(LEFT_BRACE, "Expect '{' before class body.");
+
+        List<Stmt.Function> methods = new ArrayList<>();
+        while (!check(RIGHT_BRACE) && !isAtEnd()) {
+            methods.add(function("method"));
+        }
+
+        consume(RIGHT_BRACE, "Expect '}' after class body.");
+
+        return new Stmt.Class(name, superclass, methods);
     }
 
     // Adicione o método que lê a função inteira
@@ -83,7 +108,8 @@ class Parser {
         if (match(RETURN)) {
             return returnStatement(); // <--- O RETURN FICA (Parte das Funções)
 
-                }if (match(LEFT_BRACE)) {
+        }
+        if (match(LEFT_BRACE)) {
             return new Stmt.Block(block());
         }
 
@@ -175,7 +201,7 @@ class Parser {
             return new Expr.Unary(operator, right);
         }
 
-        return call(); // <--- Mudou de primary() para call()
+        return call();
     }
 
     // Adicione este novo método
@@ -185,6 +211,9 @@ class Parser {
         while (true) {
             if (match(LEFT_PAREN)) {
                 expr = finishCall(expr);
+            } else if (match(DOT)) {
+                Token name = consume(IDENTIFIER, "Expect property name after '.'.");
+                expr = new Expr.Get(expr, name);
             } else {
                 break;
             }
@@ -223,6 +252,17 @@ class Parser {
 
         if (match(NUMBER, STRING)) {
             return new Expr.Literal(previous().literal);
+        }
+
+        if (match(SUPER)) {
+            Token keyword = previous();
+            consume(DOT, "Expect '.' after 'super'.");
+            Token method = consume(IDENTIFIER, "Expect superclass method name.");
+            return new Expr.Super(keyword, method);
+        }
+
+        if (match(THIS)) {
+            return new Expr.This(previous());
         }
 
         // --- ADICIONE ESTE BLOCO ---
@@ -316,17 +356,18 @@ class Parser {
     }
 
     private Expr assignment() {
-        Expr expr = or();
+        Expr expr = or(); // (ou equality, dependendo do que tem antes)
 
         if (match(EQUAL)) {
             Token equals = previous();
-            // Lemos o valor do lado direito recursivamente (permite a = b = 1)
             Expr value = assignment();
 
-            // Verificamos se o lado esquerdo era mesmo uma variável válida
             if (expr instanceof Expr.Variable) {
                 Token name = ((Expr.Variable) expr).name;
                 return new Expr.Assign(name, value);
+            } else if (expr instanceof Expr.Get) { // <--- NOVO
+                Expr.Get get = (Expr.Get) expr;
+                return new Expr.Set(get.object, get.name, value);
             }
 
             error(equals, "Invalid assignment target.");

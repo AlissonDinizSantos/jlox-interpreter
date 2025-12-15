@@ -7,9 +7,13 @@ abstract class Expr {
     R visitAssignExpr(Assign Expr);
     R visitBinaryExpr(Binary Expr);
     R visitCallExpr(Call Expr);
+    R visitGetExpr(Get Expr);
     R visitGroupingExpr(Grouping Expr);
     R visitLiteralExpr(Literal Expr);
     R visitLogicalExpr(Logical Expr);
+    R visitSetExpr(Set Expr);
+    R visitSuperExpr(Super Expr);
+    R visitThisExpr(This Expr);
     R visitUnaryExpr(Unary Expr);
     R visitVariableExpr(Variable Expr);
   }
@@ -59,6 +63,20 @@ abstract class Expr {
     final Token paren;
     final List<Expr> arguments;
   }
+  static class Get extends Expr {
+    Get(Expr object, Token name) {
+      this.object = object;
+      this.name = name;
+    }
+
+    @Override
+    <R> R accept(Visitor<R> visitor) {
+      return visitor.visitGetExpr(this);
+    }
+
+    final Expr object;
+    final Token name;
+  }
   static class Grouping extends Expr {
     Grouping(Expr expression) {
       this.expression = expression;
@@ -98,6 +116,48 @@ abstract class Expr {
     final Expr left;
     final Token operator;
     final Expr right;
+  }
+  static class Set extends Expr {
+    Set(Expr object, Token name, Expr value) {
+      this.object = object;
+      this.name = name;
+      this.value = value;
+    }
+
+    @Override
+    <R> R accept(Visitor<R> visitor) {
+      return visitor.visitSetExpr(this);
+    }
+
+    final Expr object;
+    final Token name;
+    final Expr value;
+  }
+  static class Super extends Expr {
+    Super(Token keyword, Token method) {
+      this.keyword = keyword;
+      this.method = method;
+    }
+
+    @Override
+    <R> R accept(Visitor<R> visitor) {
+      return visitor.visitSuperExpr(this);
+    }
+
+    final Token keyword;
+    final Token method;
+  }
+  static class This extends Expr {
+    This(Token keyword) {
+      this.keyword = keyword;
+    }
+
+    @Override
+    <R> R accept(Visitor<R> visitor) {
+      return visitor.visitThisExpr(this);
+    }
+
+    final Token keyword;
   }
   static class Unary extends Expr {
     Unary(Token operator, Expr right) {
