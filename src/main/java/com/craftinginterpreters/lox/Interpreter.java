@@ -203,6 +203,26 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         return null;
     }
 
+    @Override
+    public Object visitLogicalExpr(Expr.Logical expr) {
+        Object left = evaluate(expr.left);
+
+        if (expr.operator.type == TokenType.OR) {
+            // Se for OR e o lado esquerdo já é verdadeiro, retorna true (curto-circuito)
+            if (isTruthy(left)) {
+                return left;
+            }
+        } else {
+            // Se for AND e o lado esquerdo já é falso, retorna false (curto-circuito)
+            if (!isTruthy(left)) {
+                return left;
+            }
+        }
+
+        // Só avalia o lado direito se não houve curto-circuito
+        return evaluate(expr.right);
+    }
+
     void executeBlock(List<Stmt> statements, Environment environment) {
         Environment previous = this.environment;
         try {

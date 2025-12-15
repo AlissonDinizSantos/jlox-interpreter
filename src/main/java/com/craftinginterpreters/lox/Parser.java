@@ -53,7 +53,8 @@ class Parser {
         if (match(IF)) {
             return ifStatement(); // <--- NOVO
 
-                }if (match(PRINT)) {
+        }
+        if (match(PRINT)) {
             return printStatement();
         }
         if (match(LEFT_BRACE)) {
@@ -243,8 +244,7 @@ class Parser {
     }
 
     private Expr assignment() {
-        // Primeiro, lemos o lado esquerdo (pode ser uma variável ou outra expressão)
-        Expr expr = equality();
+        Expr expr = or();
 
         if (match(EQUAL)) {
             Token equals = previous();
@@ -286,5 +286,29 @@ class Parser {
         }
 
         return new Stmt.If(condition, thenBranch, elseBranch);
+    }
+
+    private Expr or() {
+        Expr expr = and();
+
+        while (match(OR)) {
+            Token operator = previous();
+            Expr right = and();
+            expr = new Expr.Logical(expr, operator, right);
+        }
+
+        return expr;
+    }
+
+    private Expr and() {
+        Expr expr = equality();
+
+        while (match(AND)) {
+            Token operator = previous();
+            Expr right = equality();
+            expr = new Expr.Logical(expr, operator, right);
+        }
+
+        return expr;
     }
 }
